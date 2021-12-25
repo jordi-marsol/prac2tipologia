@@ -1,0 +1,216 @@
+---
+title: "Pràctica 2"
+author: "Jordi Marsol López i Arnau "
+date: "11/12/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+library(plyr)
+library(stringr)
+library(VIM)
+```
+
+## 1. Descripció del dataset. Perquè és important i quina pregunta/problema pretén respondre? 
+
+El conjunt de dades escollit és una enquesta realitzada a estudiants d'educació secundària dels cursos de matemàtiques i llengua portuguesa. El _dataset_ recull diverses respostes  sobre l'àmbit social i escolar dels estudiants. Font: https://www.kaggle.com/uciml/student-alcohol-consumption
+
+La pregunta principal que podem respondre es **quin son els factors que porten a obtenir les millors qualificacions?**
+
+Els atributs de què està format i les seves característiques son els següents:
+
+*  school - student's school (binary: 'GP' - Gabriel Pereira or 'MS' - Mousinho da Silveira)
+*  sex - student's sex (binary: 'F' - female or 'M' - male)
+*  age - student's age (numeric: from 15 to 22)
+*  address - student's home address type (binary: 'U' - urban or 'R' - rural)
+*  famsize - family size (binary: 'LE3' - less or equal to 3 or 'GT3' - greater than 3)
+*  Pstatus - parent's cohabitation status (binary: 'T' - living together or 'A' - apart)
+*  Medu - mother's education (numeric: 0 - none, 1 - primary education (4th grade), 2 – 5th to 9th grade, 3 – secondary education or 4 – higher education)
+*  Fedu - father's education (numeric: 0 - none, 1 - primary education (4th grade), 2 – 5th to 9th grade, 3 – secondary education or 4 – higher education)
+*  Mjob - mother's job (nominal: 'teacher', 'health' care related, civil 'services' (e.g. administrative or police), 'at_home' or 'other')
+*  Fjob - father's job (nominal: 'teacher', 'health' care related, civil 'services' (e.g. administrative or police), 'at_home' or 'other')
+*  reason - reason to choose this school (nominal: close to 'home', school 'reputation', 'course' preference or 'other')
+*  guardian - student's guardian (nominal: 'mother', 'father' or 'other')
+*  traveltime - home to school travel time (numeric: 1 - <15 min., 2 - 15 to 30 min., 3 - 30 min. to 1 hour, or 4 - >1 hour)
+*  studytime - weekly study time (numeric: 1 - <2 hours, 2 - 2 to 5 hours, 3 - 5 to 10 hours, or 4 - >10 hours)
+*  failures - number of past class failures (numeric: n if 1<=n<3, else 4)
+*  schoolsup - extra educational support (binary: yes or no)
+*  famsup - family educational support (binary: yes or no)
+*  paid - extra paid classes within the course subject (Math or Portuguese) (binary: yes or no)
+*  activities - extra-curricular activities (binary: yes or no)
+*  nursery - attended nursery school (binary: yes or no)
+*  higher - wants to take higher education (binary: yes or no)
+*  internet - Internet access at home (binary: yes or no)
+*  romantic - with a romantic relationship (binary: yes or no)
+*  famrel - quality of family relationships (numeric: from 1 - very bad to 5 - excellent)
+*  freetime - free time after school (numeric: from 1 - very low to 5 - very high)
+*  goout - going out with friends (numeric: from 1 - very low to 5 - very high)
+*  Dalc - workday alcohol consumption (numeric: from 1 - very low to 5 - very high)
+*  Walc - weekend alcohol consumption (numeric: from 1 - very low to 5 - very high)
+*  health - current health status (numeric: from 1 - very bad to 5 - very good)
+*  absences - number of school absences (numeric: from 0 to 93)
+*  G1 - first period grade (numeric: from 0 to 20)
+*  G2 - second period grade (numeric: from 0 to 20)
+*  G3 - final grade (numeric: from 0 to 20, output target)
+
+
+## 2. Integració i selecció de les dades d’interès a analitzar
+
+El _dataset_ original separa en dos arxius amb els mateixos atributs els estudiants de matemàtiques i els de portuguès.
+A la font del _dataset_ es comenta i dona la opció de fusionar els dos conjunts de dades en un de sol. Tot i no haver un identificador únic d'estudiant si que se'ns proporcionen els camps que haurien de conformar un estudiant com a únic dins el conjunt per poder fer la fusió.
+
+**?¿** Nosaltres treballarem només amb el de matemàtiques.
+
+**¿?** A priori inclourem tots els atributs de la taula ja que tots poden ser susceptibles d'interès per l'anàlisi. Tot i que no els farem servir tots (o si: ex: correlacions) si que els revisarem al procés de neteja.
+
+
+## Càrrega incial
+Carreguem l'arxiu amb les dades i en mostrem un resum de les seves variables
+
+Unirem els dos _datasets_ que tenim un de la classe de matemàtiques i l'altre de portuguès i afegirem la variable "tipus" per distingir-los
+
+```{r}
+mat <- read.table("student-mat.csv",sep=",",header=TRUE)
+por <- read.table("student-por.csv",sep=",",header=TRUE)
+
+tipus <- rep("M",nrow(mat))
+mat <- cbind(mat,tipus)
+tipus <- rep("P",nrow(por))
+por <- cbind(por,tipus)
+students <- rbind(mat,por)
+str(students)
+```
+Observem que hi ha variables tan de tipus categòric com numèric. Es preferible tractar les que son de tipus cadena de caràcters com a Factors per tant tornem a carregar les dades indicant això. És així per aquest data set ja que no hi ha variables amb valor de textos lliures que podrien tenir qualsevol contingut.
+
+```{r}
+#students=read.table("student-mat.csv",sep=",",header=TRUE,stringsAsFactors = T)
+```
+
+## 3. Neteja de les dades. 
+
+### 3.1. Les dades contenen zeros o elements buits? Com gestionaries aquests casos?
+
+
+
+Seguidament farem un llistat de totes les variables i un recompte dels seus valors únics. No inclouríem aquelles que sabem que o bé no serien ni variables numèriques ni categòriques, com ara identificadors, dates o les que continguin textos lliures, observem en el resum de dades però que no seria el cas.
+
+
+
+```{r}
+
+fila <- data.frame(matrix(ncol = 3, nrow = 0))
+colnames(fila) <- c('variable','valor','quants')
+taula <- fila
+
+for (x in names(students)){
+  fila <- count(students,x)
+  fila$tipuss <- rep(x,nrow(fila))
+  colnames(fila) <- c('valor','quants','variable')
+  taula <- rbind(taula,fila)
+}
+
+taula <- taula[,c("variable","valor","quants")]
+write.csv(taula,"quants_tipus_valors.csv",fileEncoding="UTF-8")
+taula.buits <- taula[taula$valor=="" | is.na(taula$valor),]
+taula.buits <- cbind(taula.buits,round(as.numeric(taula.buits$quants) / nrow(students) *100,digits=1))
+names(taula.buits)[4] <- "percent"
+rownames(taula.buits) <- NULL
+kable(taula.buits)
+```
+</br>
+Descobrim que la taula no té cap valor buit, expressat com a una cadena buida en el cas de les dades tipus caràcter o com a valor NA en les variables numèriques. 
+
+Veient el resultat de l'arxiu de sortida obtenim un resum de quants valors únics hi ha per cada variable. Ens interessa saber quina varietat de valors únics hi ha, així observem que en diverses variables numèriques només hi ha valors del 1 al 5, o del 0 al 20 per tant serien pràcticament categòriques ja que son variables amb un rang molt concret de valors numèrics fixes, igualment segueixen sent numèriques ja que es tracta de puntuacions i per tant es poden ordenar de menor a major o al revés.
+
+Com que hem obtingut un llista de valors únics, revisarem el resultat de la taula de recompte dels valors per veure si hi ha algun valor que pugui ser estrany o fora de la seva categoria, amb un format diferent, mal escrit, etc. Està documentat quins valors poden prendre les variables però igualment cal verificar que sigui així. Observem que no hi ha valors erronis ni fora del rang que s'espera que tinguin o valors expressats com a desconeguts. L'única variable que ens fa dubtar es _absences_ ja que podria tenir *valors extrems*.
+Donat aquest resultat no serà necessari fer cap imputació de valors ja que les dades son completes.
+
+```{r}
+summary(students)
+```
+
+
+```{r}
+
+```
+
+
+
+### 3.2. Identificació i tractament de valors extrems.
+
+```{r}
+par(mar=c(2,4,2,2))
+boxplot(students$absences,col="Gray")
+hist(students$absences)
+
+#
+par(mfrow=c(2,2))
+par(mar=c(8, 4, 2, 2) + 0.1)
+for(i in 1:ncol(students)) {
+  if (is.integer(students[,i])){
+    boxplot(students[,i], main = colnames(students)[i], width = 100)
+  }
+  else{
+    barplot(sort(table(students[,i]),decreasing=T,main = colnames(students)[i]), las=2)
+  }
+}
+students <- students[!students %in% boxplot.stats(students$absences)$out]
+par(mar=c(2,4,2,2))
+boxplot(students$absences,col="Gray")
+hist(students$absences)
+```
+
+Veiem que les variables G1, G2 i G3 son similars i com que no caldria tractar-les individualment en crearem una de sola amb la mitjana de les tres
+
+students$Grade_mean <- round(rowMeans(students[,c("G1","G2","G3")]),1)
+
+També veiem pel gràfic que la variable _absences_ conté diversos valors extrems que sobresurten bastant. Els aïllem i els mostrem individualment, la resta de variables amb valors extrems son molt pocs i entenem que entren dins dels valors possibles que poden aparèixer.
+
+```{r}
+boxplot.stats(students$absences)$out
+count(boxplot.stats(students$absences)$out)
+```
+Tenim que hi ha una cinquantena de valors extrems del total de 1044 registres de dades, així que decidim excloure aquests registres de la mostra per poder fer un anàlisi millor posteriorment. En un possible estudi també es podria analitzar com son de diferents els estudiants amb valors extrems de la resta que no ho son.
+
+```{r}
+students <- students[!students$absences %in% boxplot.stats(students$absences)$out,]
+std.out <- students[students$absences %in% boxplot.stats(students$absences)$out,]
+par(mar=c(2,4,2,2))
+boxplot(students$absences,col="Gray")
+hist(students$absences,breaks=10)
+```
+Eliminem els outliers de la mostra i en tornem a mostrar el gràfic sense aquests.
+
+
+Correlacions, aniria aqui o analisi? 
+```{r}
+core <- cor(students[,c("age","Medu","Fedu","traveltime","studytime","failures","famrel","freetime","goout","Dalc","Walc","health","absences","G1","G2","G3")], use="complete")
+library(corrplot)
+corrplot(core,method="circle")
+```
+Veiem una lleugera correlació entre sortir i el consum d'alcohol el cap de setmana, cosa coherent. També entre el consum diari i el de cap de setmana. També veiem que tenir més temps lliure comporta més consum d'alcohol els dies fora de cap de setmana. També lleugerament l'educació del pare o la mare està correlacionat amb les notes que es treuen. O com sortir més implica de manera subtil notes més baixes.
+**miro amb mes detall la correlacio de dues variables per veue si es significatiu, pero sembla que no, per tant no val?** i surt un warning, amb altres variables fa el mateix..
+https://www.tutorialspoint.com/how-to-avoid-the-warning-cannot-compute-exact-p-value-with-ties-while-perform-correlation-test-for-spearman-s-correlation-in-r
+cor.test(students$goout,students$Walc, method="spearman")
+
+Proves diverses:
+
+temps lliure d'homes i dones
+boxplot(
+     students[students$sex=='F',"freetime"]
+     ,students[students$sex=='M',"freetime"]
+     ,names=c("F","M"),col="Gray")
+
+plot(d2$G2,d2$G3, pch = 19, col = "lightblue")
+abline(lm(d2$G2 ~ d2$G3), col = "red", lwd = 3)
+
+Forma part de l'anàlisi segurament:
+normalitzar valor
+library(DescTools)
+students$absences.norm <- BoxCox(students$absences, lambda = BoxCoxLambda(students$absences))
+shapiro.test(students$absences.norm)
+qqnorm(students$absences.norm)
+qqline(students$absences.norm)
+hist(students$absences.norm)
