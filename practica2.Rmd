@@ -1,6 +1,6 @@
 ---
 title: "Pràctica 2"
-author: "Jordi Marsol López i Arnau "
+author: "Jordi Marsol López i Arnau Rafi Cuello"
 date: "11/12/2021"
 output: html_document
 ---
@@ -17,9 +17,9 @@ library(VIM)
 
 El conjunt de dades escollit és una enquesta realitzada a estudiants d'educació secundària dels cursos de matemàtiques i llengua portuguesa. El _dataset_ recull diverses respostes  sobre l'àmbit social i escolar dels estudiants. Font: https://www.kaggle.com/uciml/student-alcohol-consumption
 
-La pregunta principal que podem respondre es **quin son els factors que porten a obtenir les millors qualificacions?**
+La pregunta principal que podem respondre és **quin son els factors que porten a obtenir les millors qualificacions?** També podrem fer altres creuaments de dades que estimem oportuns segons anem veient a l'estudi. 
 
-Els atributs de què està format i les seves característiques son els següents:
+Els atributs de què està format i les seves característiques son els següents com s'indica a la font original serien:
 
 *  school - student's school (binary: 'GP' - Gabriel Pereira or 'MS' - Mousinho da Silveira)
 *  sex - student's sex (binary: 'F' - female or 'M' - male)
@@ -59,17 +59,14 @@ Els atributs de què està format i les seves característiques son els següent
 ## 2. Integració i selecció de les dades d’interès a analitzar
 
 El _dataset_ original separa en dos arxius amb els mateixos atributs els estudiants de matemàtiques i els de portuguès.
-A la font del _dataset_ es comenta i dona la opció de fusionar els dos conjunts de dades en un de sol. Tot i no haver un identificador únic d'estudiant si que se'ns proporcionen els camps que haurien de conformar un estudiant com a únic dins el conjunt per poder fer la fusió.
+A la font del _dataset_ es comenta i dona la opció de fusionar els dos conjunts de dades en un de sol amb les dades dels estudiants que estiguin als dos cursos alhora. Tot i no haver un identificador únic d'estudiant si que se'ns proporcionen els camps que haurien de conformar un estudiant com a únic dins el conjunt per poder fer la fusió.
 
-**?¿** Nosaltres treballarem només amb el de matemàtiques.
+A priori inclourem tots els atributs de la taula ja que tots poden ser susceptibles d'interès per l'anàlisi. Tot i que només els compararem tots exhaustivament en alguns casos com ara l'anàlisi de correlacions, si que els revisarem al procés de neteja.
 
-**¿?** A priori inclourem tots els atributs de la taula ja que tots poden ser susceptibles d'interès per l'anàlisi. Tot i que no els farem servir tots (o si: ex: correlacions) si que els revisarem al procés de neteja.
-
-
-## Càrrega incial
+### Càrrega incial
 Carreguem l'arxiu amb les dades i en mostrem un resum de les seves variables
 
-Unirem els dos _datasets_ que tenim un de la classe de matemàtiques i l'altre de portuguès i afegirem la variable "tipus" per distingir-los
+Per maximitzar l'estudi unirem els dos _datasets_ que tenim un de la classe de matemàtiques i l'altre de portuguès i crearem la variable "tipus" per distingir-los, indicant "M" per màtemàtiques o "P" per portuguès.
 
 ```{r}
 mat <- read.table("student-mat.csv",sep=",",header=TRUE)
@@ -79,23 +76,20 @@ tipus <- rep("M",nrow(mat))
 mat <- cbind(mat,tipus)
 tipus <- rep("P",nrow(por))
 por <- cbind(por,tipus)
-students <- rbind(mat,por)
-str(students)
+alumnes <- rbind(mat,por)
+str(alumnes)
 ```
-Observem que hi ha variables tan de tipus categòric com numèric. Es preferible tractar les que son de tipus cadena de caràcters com a Factors per tant tornem a carregar les dades indicant això. És així per aquest data set ja que no hi ha variables amb valor de textos lliures que podrien tenir qualsevol contingut.
+Observem que hi ha variables tan de tipus categòric com numèric. En aquest _dataset_  no hi ha variables amb valor de textos lliures que podrien tenir qualsevol contingut, per tant les que siguin tipus caràcter es poden tractar com a factors.
 
-```{r}
-#students=read.table("student-mat.csv",sep=",",header=TRUE,stringsAsFactors = T)
-```
 
 ## 3. Neteja de les dades. 
 
 ### 3.1. Les dades contenen zeros o elements buits? Com gestionaries aquests casos?
 
 
+Seguidament farem un llistat de totes les variables i un recompte dels seus valors únics. No inclouríem aquelles que sabem que o bé no serien ni variables numèriques ni categòriques, com ara identificadors, dates o les que continguin textos lliures, observem en el resum de dades però que no seria el cas i totes poden ser útils.
 
-Seguidament farem un llistat de totes les variables i un recompte dels seus valors únics. No inclouríem aquelles que sabem que o bé no serien ni variables numèriques ni categòriques, com ara identificadors, dates o les que continguin textos lliures, observem en el resum de dades però que no seria el cas.
-
+En la següent funció en R es va fent un recompte de les variables, crearem un arxiu de sortida per a un primer anàlisi exploratori i mostraríem apart el percentatge de variables amb valors buits o "NA"s. La funció seria d'especial interès per altres estudis amb un gran nombre de variables.
 
 
 ```{r}
@@ -104,9 +98,9 @@ fila <- data.frame(matrix(ncol = 3, nrow = 0))
 colnames(fila) <- c('variable','valor','quants')
 taula <- fila
 
-for (x in names(students)){
-  fila <- count(students,x)
-  fila$tipuss <- rep(x,nrow(fila))
+for (x in names(alumnes)){
+  fila <- count(alumnes,x)
+  fila$tipu <- rep(x,nrow(fila))
   colnames(fila) <- c('valor','quants','variable')
   taula <- rbind(taula,fila)
 }
@@ -114,103 +108,75 @@ for (x in names(students)){
 taula <- taula[,c("variable","valor","quants")]
 write.csv(taula,"quants_tipus_valors.csv",fileEncoding="UTF-8")
 taula.buits <- taula[taula$valor=="" | is.na(taula$valor),]
-taula.buits <- cbind(taula.buits,round(as.numeric(taula.buits$quants) / nrow(students) *100,digits=1))
+taula.buits <- cbind(taula.buits,round(as.numeric(taula.buits$quants) / nrow(alumnes) *100,digits=1))
 names(taula.buits)[4] <- "percent"
 rownames(taula.buits) <- NULL
-kable(taula.buits)
+table(taula.buits)
 ```
 </br>
 Descobrim que la taula no té cap valor buit, expressat com a una cadena buida en el cas de les dades tipus caràcter o com a valor NA en les variables numèriques. 
 
-Veient el resultat de l'arxiu de sortida obtenim un resum de quants valors únics hi ha per cada variable. Ens interessa saber quina varietat de valors únics hi ha, així observem que en diverses variables numèriques només hi ha valors del 1 al 5, o del 0 al 20 per tant serien pràcticament categòriques ja que son variables amb un rang molt concret de valors numèrics fixes, igualment segueixen sent numèriques ja que es tracta de puntuacions i per tant es poden ordenar de menor a major o al revés.
+Si veiem el resultat de l'arxiu de sortida obtindríem un resum de quants valors únics hi ha per cada variable. Ens interessa saber quina varietat de valors únics hi ha, així observem que en diverses variables numèriques només hi ha valors del 1 al 5, o del 0 al 20 per tant serien pràcticament categòriques ja que son variables amb un rang molt concret de valors numèrics fixes, igualment segueixen sent numèriques ja que es tracta de puntuacions i per tant es poden ordenar de menor a major o al revés.
 
-Com que hem obtingut un llista de valors únics, revisarem el resultat de la taula de recompte dels valors per veure si hi ha algun valor que pugui ser estrany o fora de la seva categoria, amb un format diferent, mal escrit, etc. Està documentat quins valors poden prendre les variables però igualment cal verificar que sigui així. Observem que no hi ha valors erronis ni fora del rang que s'espera que tinguin o valors expressats com a desconeguts. L'única variable que ens fa dubtar es _absences_ ja que podria tenir *valors extrems*.
+Com que hem obtingut un llista de valors únics, revisarem el resultat de la taula de recompte dels valors per veure si hi ha algun valor que pugui ser estrany o fora de la seva categoria, amb un format diferent, mal escrit, etc. Està documentat al _dataset_ original quins valors poden prendre les variables però igualment cal verificar que sigui així. Observem que no hi ha valors erronis ni fora del rang que s'espera que tinguin o valors expressats com a desconeguts. L'única variable que ens fa dubtar es _absences_ ja que podria tenir *valors extrems*.
 Donat aquest resultat no serà necessari fer cap imputació de valors ja que les dades son completes.
 
-```{r}
-summary(students)
-```
-
+Al següent pas convertirem les dades de tipus caràcter a factor i en mostrarem un resum numèric de totes elles
 
 ```{r}
-
+alumnes <- as.data.frame(unclass(alumnes),stringsAsFactors=TRUE) # no va bé a R convertir-ho a factors abans de la funció anterior
+summary(alumnes)
 ```
-
 
 
 ### 3.2. Identificació i tractament de valors extrems.
 
-```{r}
-par(mar=c(2,4,2,2))
-boxplot(students$absences,col="Gray")
-hist(students$absences)
+Mostrarem gràfiques tipus _boxplot_ per cadascuna de les variables numèriques per identificar _outliers_ ràpidament i després ens centrarem en la variable _absences_ que és la que veiem que té un valor màxim més elevat i podria contenir valors extrems.
 
-#
-par(mfrow=c(2,2))
-par(mar=c(8, 4, 2, 2) + 0.1)
-for(i in 1:ncol(students)) {
-  if (is.integer(students[,i])){
-    boxplot(students[,i], main = colnames(students)[i], width = 100)
-  }
-  else{
-    barplot(sort(table(students[,i]),decreasing=T,main = colnames(students)[i]), las=2)
+```{r}
+par(mfrow=c(2,2), mar=c(2,5,1,1))
+for(i in 1:ncol(alumnes)) {
+  if (is.integer(alumnes[,i])){
+    boxplot(alumnes[,i], main = colnames(alumnes)[i], width = 100,col="cornflowerblue")
   }
 }
-students <- students[!students %in% boxplot.stats(students$absences)$out]
-par(mar=c(2,4,2,2))
-boxplot(students$absences,col="Gray")
-hist(students$absences)
 ```
+
+Trobem que de les diverses variables numèriques algunes indiquen possibles valors extrems no obstant considerem que entren dins el rang previsible que puguin tenir i no les exclourem. 
 
 Veiem que les variables G1, G2 i G3 son similars i com que no caldria tractar-les individualment en crearem una de sola amb la mitjana de les tres
 
-students$Grade_mean <- round(rowMeans(students[,c("G1","G2","G3")]),1)
+```{r}
+alumnes$grade_mean <- round(rowMeans(alumnes[,c("G1","G2","G3")]),1)
+```
 
-També veiem pel gràfic que la variable _absences_ conté diversos valors extrems que sobresurten bastant. Els aïllem i els mostrem individualment, la resta de variables amb valors extrems son molt pocs i entenem que entren dins dels valors possibles que poden aparèixer.
+</br>
+```{r}
+alumnes <- alumnes[!alumnes %in% boxplot.stats(alumnes$absences)$out]
+par(mfrow=c(1,2))
+boxplot(alumnes$absences,col="cornflowerblue")
+hist(alumnes$absences,col="cornflowerblue")
+```
+
+Confirmem pel gràfic que la variable _absences_ conté diversos valors extrems que sobresurten bastant. Els aïllem i els mostrem individualment, la resta de variables amb valors extrems son molt pocs i entenem que entren dins dels valors possibles que poden aparèixer.
+
+Aïllem els valors extrems i contem quants apareixen
 
 ```{r}
-boxplot.stats(students$absences)$out
-count(boxplot.stats(students$absences)$out)
+boxplot.stats(alumnes$absences)$out
+count(boxplot.stats(alumnes$absences)$out)
 ```
+
 Tenim que hi ha una cinquantena de valors extrems del total de 1044 registres de dades, així que decidim excloure aquests registres de la mostra per poder fer un anàlisi millor posteriorment. En un possible estudi també es podria analitzar com son de diferents els estudiants amb valors extrems de la resta que no ho son.
 
+Per acabar, eliminem els _outliers_ de la mostra i en tornem a mostrar el gràfic sense aquests.
+
 ```{r}
-students <- students[!students$absences %in% boxplot.stats(students$absences)$out,]
-std.out <- students[students$absences %in% boxplot.stats(students$absences)$out,]
-par(mar=c(2,4,2,2))
-boxplot(students$absences,col="Gray")
-hist(students$absences,breaks=10)
+alumnes <- alumnes[!alumnes$absences %in% boxplot.stats(alumnes$absences)$out,]
+std.out <- alumnes[alumnes$absences %in% boxplot.stats(alumnes$absences)$out,]
+par(mfrow=c(1,2))
+boxplot(alumnes$absences,col="cornflowerblue")
+hist(alumnes$absences,breaks=10,col="cornflowerblue")
 ```
-Eliminem els outliers de la mostra i en tornem a mostrar el gràfic sense aquests.
 
 
-Correlacions, aniria aqui o analisi? 
-```{r}
-core <- cor(students[,c("age","Medu","Fedu","traveltime","studytime","failures","famrel","freetime","goout","Dalc","Walc","health","absences","G1","G2","G3")], use="complete")
-library(corrplot)
-corrplot(core,method="circle")
-```
-Veiem una lleugera correlació entre sortir i el consum d'alcohol el cap de setmana, cosa coherent. També entre el consum diari i el de cap de setmana. També veiem que tenir més temps lliure comporta més consum d'alcohol els dies fora de cap de setmana. També lleugerament l'educació del pare o la mare està correlacionat amb les notes que es treuen. O com sortir més implica de manera subtil notes més baixes.
-**miro amb mes detall la correlacio de dues variables per veue si es significatiu, pero sembla que no, per tant no val?** i surt un warning, amb altres variables fa el mateix..
-https://www.tutorialspoint.com/how-to-avoid-the-warning-cannot-compute-exact-p-value-with-ties-while-perform-correlation-test-for-spearman-s-correlation-in-r
-cor.test(students$goout,students$Walc, method="spearman")
-
-Proves diverses:
-
-temps lliure d'homes i dones
-boxplot(
-     students[students$sex=='F',"freetime"]
-     ,students[students$sex=='M',"freetime"]
-     ,names=c("F","M"),col="Gray")
-
-plot(d2$G2,d2$G3, pch = 19, col = "lightblue")
-abline(lm(d2$G2 ~ d2$G3), col = "red", lwd = 3)
-
-Forma part de l'anàlisi segurament:
-normalitzar valor
-library(DescTools)
-students$absences.norm <- BoxCox(students$absences, lambda = BoxCoxLambda(students$absences))
-shapiro.test(students$absences.norm)
-qqnorm(students$absences.norm)
-qqline(students$absences.norm)
-hist(students$absences.norm)
