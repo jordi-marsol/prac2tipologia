@@ -12,12 +12,19 @@ library(plyr)
 library(stringr)
 library(VIM)
 ```
+## 0. Treball previ de selecció
+
+Inicialment volíem donar continuïtat a la pràctica 1 que vam treballar sobre _webscraping_ però vam descartar les dades que vam extreure ja que no tenien prou varietat de camps per fer un anàlisi interessant. Seguidament vam trobar un _dataset_ relacionat amb la nostra pràctica que podria ser més interessant sobre accidents en parcs d'atraccions (https://www.kaggle.com/stevenlasch/roller-coaster-accidents) i fins i tot el vam voler creuar amb la nostra extracció de dades però no hi havia un identificador clar per relacionar-los i vam descartar aquesta possibilitat.
+
+Vam explorar més a fons les dades d'aquest nou conjunt de dades de manera independent del de la primera pràctica però també vam trobar diversos inconvenients que ens el van fer descartar finalment. Ens vam trobar que hi havia molt poques variables quantitatives, algunes d'elles podien ser interessants però vam trobar que tenien una gran quantitat de dades buides (mes del 90%) i altres com ara la edat dels accidentats tampoc li vam saber trobar interès amb creuar-lo amb altres variables.
+
+Finalment vam trobar un _dataset_ amb més interès i un bon equilibri de variables categòriques i numèriques què, sense ser molt gran, igualment li vam veure més potencial per desenvolupar l'estudi que farem a continuació.
 
 ## 1. Descripció del dataset. Perquè és important i quina pregunta/problema pretén respondre? 
 
-El conjunt de dades escollit és una enquesta realitzada a estudiants d'educació secundària dels cursos de matemàtiques i llengua portuguesa. El _dataset_ recull diverses respostes  sobre l'àmbit social i escolar dels estudiants. Font: https://www.kaggle.com/uciml/student-alcohol-consumption
+El conjunt de dades escollit és una enquesta realitzada a estudiants d'educació secundària dels cursos de matemàtiques i llengua portuguesa. El _dataset_ recull diverses respostes  sobre l'àmbit social i escolar dels estudiants. El podem trobar a: https://www.kaggle.com/uciml/student-alcohol-consumption
 
-La pregunta principal que podem respondre és **quin son els factors que porten a obtenir les millors qualificacions?** També podrem fer altres creuaments de dades que estimem oportuns segons anem veient a l'estudi. 
+La pregunta principal que podem respondre és: quin son els factors que porten a obtenir les millors qualificacions? També podrem fer altres creuaments de dades que estimem oportuns segons anem veient a l'estudi. 
 
 Els atributs de què està format i les seves característiques son els següents com s'indica a la font original serien:
 
@@ -144,7 +151,7 @@ for(i in 1:ncol(alumnes)) {
 
 Trobem que de les diverses variables numèriques algunes indiquen possibles valors extrems no obstant considerem que entren dins el rang previsible que puguin tenir i no les exclourem. 
 
-Veiem que les variables G1, G2 i G3 son similars i com que no caldria tractar-les individualment en crearem una de sola amb la mitjana de les tres
+Veiem que les variables G1, G2 i G3 son similars i com que no caldria tractar-les individualment en crearem una de sola amb la mitjana de les tres.
 
 ```{r}
 alumnes$grade_mean <- round(rowMeans(alumnes[,c("G1","G2","G3")]),1)
@@ -158,9 +165,9 @@ boxplot(alumnes$absences,col="cornflowerblue")
 hist(alumnes$absences,col="cornflowerblue")
 ```
 
-Confirmem pel gràfic que la variable _absences_ conté diversos valors extrems que sobresurten bastant. Els aïllem i els mostrem individualment, la resta de variables amb valors extrems son molt pocs i entenem que entren dins dels valors possibles que poden aparèixer.
+Confirmem pel gràfic que la variable _absences_ conté diversos valors extrems que sobresurten bastant. Els aïllem i els mostrem individualment, la resta de variables amb valors extrems son molt pocs i creiem que entren dins dels valors possibles que poden aparèixer.
 
-Aïllem els valors extrems i contem quants apareixen
+Aïllem els valors extrems i contem quants apareixen.
 
 ```{r}
 boxplot.stats(alumnes$absences)$out
@@ -169,7 +176,7 @@ count(boxplot.stats(alumnes$absences)$out)
 
 Tenim que hi ha una cinquantena de valors extrems del total de 1044 registres de dades, així que decidim excloure aquests registres de la mostra per poder fer un anàlisi millor posteriorment. En un possible estudi també es podria analitzar com son de diferents els estudiants amb valors extrems de la resta que no ho son.
 
-Per acabar, eliminem els _outliers_ de la mostra i en tornem a mostrar el gràfic sense aquests.
+Per acabar el treball de neteja, eliminarem els _outliers_ de la mostra i en tornem a mostrar el gràfic sense aquests.
 
 ```{r}
 alumnes <- alumnes[!alumnes$absences %in% boxplot.stats(alumnes$absences)$out,]
