@@ -1,7 +1,7 @@
 ---
 title: "Pràctica 2"
 author: "Jordi Marsol López i Arnau Rafi Cuello"
-date: "20/12/2021"
+date: "11/12/2021"
 output:
   html_document:
     toc: yes
@@ -385,12 +385,14 @@ en relació amb el *grade* G:
 
 -   G \~ sex
 -   G \~ address
--   G \~ assignatura \<- falta definir i omplir variable
+-   G \~ assignatura
 -   G \~ nursery
--   G \~ higher
 -   G \~ internet
--   
--   G \~ Mjob(health) or Fjob(teacher)
+
+```{r definicio_var_analitzar}
+
+target_variables <- c("sex", "address", "school", "nursery", "internet")
+```
 
 Per acabar el plantejament dels anàlisis, creo una variable dicotòmica
 anomenada \*approved\* que, en funció de G3 (o la mitja entre les G),
@@ -505,8 +507,6 @@ library(viridis)
 library(stringr)
 library(gridExtra)
 
-target_variables <- c("sex", "address", "school", "nursery", "internet", "famsize")
-
 plist <- lapply(target_variables, function(each_variable) {
   ggplot(alumnes, aes_string(x=alumnes$grade_mean,
                                           group=each_variable,
@@ -610,11 +610,7 @@ for (each_variable in target_variables){
   }
   
   # Aplico t.test i obtinc p-value:
-  if(each_variable=="famsize"){
-    pval <- t.test(subsets[[1]]$grade_mean,subsets[[2]]$grade_mean, 
-                   alternative="two.sided", 
-                   var.equal=TRUE)$p.value
-  }else if (mean(subsets[[1]]$grade_mean) > mean(subsets[[2]]$grade_mean)){
+  if (mean(subsets[[1]]$grade_mean) > mean(subsets[[2]]$grade_mean)){
     pval <- t.test(subsets[[1]]$grade_mean,subsets[[2]]$grade_mean, 
                    alternative="greater", 
                    var.equal=TRUE)$p.value
@@ -666,11 +662,7 @@ Com es pot comprovar, les respostes a les preguntes anteriors serien:
     no. Amb un nivell de confiança del 95%, **es pot afirmar
     estadísticament que** l**'alumnat que té accés a internet té un
     *Grade* major que el que no disposa d'accés a internet**.
-6.  Com abans, el valor p obtingut porta a rebutjar la hipòtesi nul·la d'igualtat
-    de mitjanes de notes (*Grades)* entre alumnes amb accés família nombrosa o
-    no. Amb un nivell de confiança del 95%, **es pot afirmar
-    estadísticament que hi ha diferències significatives entre els *Grades*
-    d'alumnes amb família nombrosa i alumnes que no tenen família nombrosa**.
+    
 
 ### 4.3.2. Aplicació de proves no paramètriques
 
@@ -706,10 +698,7 @@ for (each_variable in target_variables){
   }
   
   # Aplico t.test i obtinc p-value:
-  if(each_variable=="famsize"){
-    pval <- wilcox.test(subsets[[1]]$grade_mean,subsets[[2]]$grade_mean, 
-                   alternative="two.sided")$p.value
-  }else if (mean(subsets[[1]]$grade_mean) > mean(subsets[[2]]$grade_mean)){
+  if (mean(subsets[[1]]$grade_mean) > mean(subsets[[2]]$grade_mean)){
     pval <- wilcox.test(subsets[[1]]$grade_mean,subsets[[2]]$grade_mean, 
                    alternative="greater")$p.value
   }else{
@@ -726,18 +715,15 @@ for (each_variable in target_variables){
 ```
 
 Podem comprovar que els p-value resultants de les proves
-no-paramètriques porta a les mateixes conclusions que els p-value
-resultants de les proves paramètriques. Per tant, es pot concloure que
-la assumpció (opció A detallada en el subapartat anterior) de normalitat
-poblacional -i la conseqüent desviació respecte a la normal- no genera
+no-paramètriques per aquestes parelles de variables, porta a les mateixes
+conclusions que els p-value resultants de les proves paramètriques. Per tant, 
+es pot concloure que la assumpció (opció A detallada en el subapartat anterior) 
+de normalitat poblacional -i la conseqüent desviació respecte a la normal- no genera
 cap impacte significatiu en els resultats dels anàlisis plantejats.
 
 ### 4.3.3. Creació d'un model generalitzat
 
 ```{r model_generalitzat}
-
-mod.gen <- lm(G3 ~ goout + failures + age , data = alumnes)
-
-#GLMa <- glm(formula=approved~failures+factor(goout),family=binomial(link=logit), data = alumnes)
-#summary(GLMa)
+GLMa <- glm(formula=approved~failures+factor(goout),family=binomial(link=logit), data = alumnes)
+summary(GLMa)
 ```
