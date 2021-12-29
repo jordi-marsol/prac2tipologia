@@ -3,11 +3,11 @@ title: "Pràctica 2"
 author: "Jordi Marsol López i Arnau Rafi Cuello"
 date: "11/12/2021"
 output:
-  html_document:
+  word_document:  
     toc: yes
   pdf_document:
     toc: yes
-  word_document:  
+  html_document:
     toc: yes
 editor_options:
   markdown:
@@ -143,7 +143,7 @@ variables
 
 Per maximitzar l'estudi unirem els dos *datasets* que tenim un de la
 classe de matemàtiques i l'altre de portuguès i crearem la variable
-"tipus" per distingir-los, indicant "M" per màtemàtiques o "P" per
+"tipus" per distingir-los, indicant "M" per matemàtiques o "P" per
 portuguès.
 
 ```{r , echo=FALSE}
@@ -225,12 +225,10 @@ fa dubtar es *absences* ja que podria tenir *valors extrems*. Donat
 aquest resultat no serà necessari fer cap imputació de valors ja que les
 dades son completes.
 
-Al següent pas convertirem les dades de tipus caràcter a factor i en
-mostrarem un resum numèric de totes elles
+Al següent pas convertirem les dades de tipus caràcter a factor.
 
 ```{r , echo=FALSE}
 alumnes <- as.data.frame(unclass(alumnes),stringsAsFactors=TRUE) # no va bé a R convertir-ho a factors abans de la funció anterior
-summary(alumnes)
 ```
 
 ### 3.2. Identificació i tractament de valors extrems.
@@ -261,25 +259,13 @@ tres.
 alumnes$grade_mean <- round(rowMeans(alumnes[,c("G1","G2","G3")]),1)
 ```
 
-</br>
-
-```{r , echo=FALSE}
-alumnes <- alumnes[!alumnes %in% boxplot.stats(alumnes$absences)$out]
-par(mfrow=c(1,2))
-boxplot(alumnes$absences,col="cornflowerblue")
-hist(alumnes$absences,col="cornflowerblue")
-```
-
 Confirmem pel gràfic que la variable *absences* conté diversos valors
 extrems que sobresurten bastant. Els aïllem i els mostrem
 individualment, la resta de variables amb valors extrems son molt pocs i
 creiem que entren dins dels valors possibles que poden aparèixer.
 
-Aïllem els valors extrems i contem quants apareixen.
-
 ```{r , echo=FALSE}
 boxplot.stats(alumnes$absences)$out
-count(boxplot.stats(alumnes$absences)$out)
 ```
 
 Tenim que hi ha una cinquantena de valors extrems del total de 1044
@@ -289,14 +275,11 @@ estudi també es podria analitzar com son de diferents els estudiants amb
 valors extrems de la resta que no ho son.
 
 Per acabar el treball de neteja, eliminarem els *outliers* de la mostra
-i en tornem a mostrar el gràfic sense aquests.
+i exportarem l'arxiu de sortida amb tot el dataset preparat.
 
 ```{r , echo=FALSE}
 alumnes <- alumnes[!alumnes$absences %in% boxplot.stats(alumnes$absences)$out,]
-std.out <- alumnes[alumnes$absences %in% boxplot.stats(alumnes$absences)$out,]
-par(mfrow=c(1,2))
-boxplot(alumnes$absences,col="cornflowerblue")
-hist(alumnes$absences,breaks=10,col="cornflowerblue")
+write.csv(alumnes,"dataset_out.csv",fileEncoding="UTF-8")
 ```
 
 # 4. Anàlisi de dades
@@ -355,16 +338,17 @@ Estudio ara possibles correlacions entre variables categòriques i
 numèriques:
 
 Faig diversos boxplots per veure de manera preeliminar com varia el
-*final grade* (G3) en funció de diferents variables categòriques:
+*grade_mean* en funció de diferents variables categòriques:
 
+ 
 ```{r 0-6 , echo=FALSE}
 
-par(mfrow=c(1,3), oma = c(0, 0, 0, 0))
-
+par(mfrow=c(2,4), oma = c(0, 0, 0, 0))
+par(mar = c(par("mar")[1], 2, 1, 0))
 for(i in 1:ncol(alumnes)) {
   if (is.factor(alumnes[,i])){
     boxplot(alumnes$grade_mean ~ alumnes[,i], main = colnames(alumnes)[i], 
-              ylab = 'Grade', xlab = '')
+              ylab = 'Grade', xlab = '', col="cornflowerblue")
   }
   if (i == 1){
     mtext('   Boxplots comparatius', outer = TRUE, cex = 1.5)
@@ -408,6 +392,7 @@ tail(alumnes$G3, 10)
 Així doncs, genero els següents gràfics de barres:
 
 ```{r 0-9 , echo=FALSE}
+par(mfrow=c(1, 2))
 with(alumnes, Barplot(Fjob, by=suspended, style="divided", 
   legend.pos="above", ylab="percent", scale = "percent",
   label.bars=FALSE))
@@ -424,7 +409,7 @@ un histograma amb corva de densitat i un diagrama de quantils qqplot:
 
 ```{r comprovacions_normalitat, fig.width=3, fig.height=4 , echo=FALSE}
 
-par(mfrow=c(2, 1))
+par(mfrow=c(1, 1))
 
 Hist(alumnes$grade_mean, freq=F)
 lines(density(alumnes$grade_mean),col='blue')
