@@ -3,11 +3,11 @@ title: "Pràctica 2"
 author: "Jordi Marsol López i Arnau Rafi Cuello"
 date: "11/12/2021"
 output:
-  html_document:
+  word_document:  
     toc: yes
   pdf_document:
     toc: yes
-  word_document:  
+  html_document:
     toc: yes
 editor_options:
   markdown:
@@ -643,7 +643,7 @@ Com es pot comprovar, les respostes a les preguntes anteriors serien:
 ### 4.3.2. Aplicació de proves no paramètriques
 
 El test no paramètric equivalent al test t de dues mostres independents
-és l'anomenat test de sumade rangs de Wilcoxon. Aquest test es realitza
+és l'anomenat test de suma de rangs de Wilcoxon. Aquest test es realitza
 per a dues mostres independents de mida n1 i n2. Tot i que no s'assumeix
 que les poblacions siguin normals, s'assumeix que la distribució de les
 poblacions és la mateixa (la qual cosa implica variància igual). Donada
