@@ -1,0 +1,789 @@
+---
+title: "Pràctica 2"
+author: "Jordi Marsol López i Arnau Rafi Cuello"
+date: "11/12/2021"
+output:
+  word_document:  
+    toc: yes
+  pdf_document:
+    toc: yes
+  html_document:
+    toc: yes
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE) 
+library(Rcmdr) 
+library(knitr) 
+library(plyr) 
+library(stringr) 
+library(VIM)
+```
+
+## 0. Treball previ de selecció
+
+Inicialment volíem donar continuïtat a la pràctica 1 que vam treballar
+sobre *webscraping* però vam descartar les dades que vam extreure ja que
+no tenien prou varietat de camps per fer un anàlisi interessant.
+Seguidament vam trobar un *dataset* relacionat amb la nostra pràctica
+que podria ser més interessant sobre accidents en parcs d'atraccions
+(<https://www.kaggle.com/stevenlasch/roller-coaster-accidents>) i fins i
+tot el vam voler creuar amb la nostra extracció de dades però no hi
+havia un identificador clar per relacionar-los i vam descartar aquesta
+possibilitat.
+
+Vam explorar més a fons les dades d'aquest nou conjunt de dades de
+manera independent del de la primera pràctica però també vam trobar
+diversos inconvenients que ens el van fer descartar finalment. Ens vam
+trobar que hi havia molt poques variables quantitatives, algunes d'elles
+podien ser interessants però vam trobar que tenien una gran quantitat de
+dades buides (mes del 90%) i altres com ara la edat dels accidentats
+tampoc li vam saber trobar interès amb creuar-lo amb altres variables.
+
+Finalment vam trobar un *dataset* amb més interès i un bon equilibri de
+variables categòriques i numèriques què, sense ser molt gran, igualment
+li vam veure més potencial per desenvolupar l'estudi que farem a
+continuació.
+
+## 1. Descripció del dataset. Perquè és important i quina pregunta/problema pretén respondre?
+
+El conjunt de dades escollit és una enquesta realitzada a estudiants
+d'educació secundària dels cursos de matemàtiques i llengua portuguesa.
+El *dataset* recull diverses respostes sobre l'àmbit social i escolar
+dels estudiants. El podem trobar a:
+<https://www.kaggle.com/uciml/student-alcohol-consumption>
+
+La pregunta principal que podem respondre és: quin son els factors que
+porten a obtenir les millors qualificacions? També podrem fer altres
+creuaments de dades que estimem oportuns segons anem veient a l'estudi.
+
+Els atributs de què està format i les seves característiques son els
+següents com s'indica a la font original serien:
+
+-   school - student's school (binary: 'GP' - Gabriel Pereira or 'MS' -
+    Mousinho da Silveira)
+-   sex - student's sex (binary: 'F' - female or 'M' - male)
+-   age - student's age (numeric: from 15 to 22)
+-   address - student's home address type (binary: 'U' - urban or 'R' -
+    rural)
+-   famsize - family size (binary: 'LE3' - less or equal to 3 or 'GT3' -
+    greater than 3)
+-   Pstatus - parent's cohabitation status (binary: 'T' - living
+    together or 'A' - apart)
+-   Medu - mother's education (numeric: 0 - none, 1 - primary education
+    (4th grade), 2 -- 5th to 9th grade, 3 -- secondary education or 4 --
+    higher education)
+-   Fedu - father's education (numeric: 0 - none, 1 - primary education
+    (4th grade), 2 -- 5th to 9th grade, 3 -- secondary education or 4 --
+    higher education)
+-   Mjob - mother's job (nominal: 'teacher', 'health' care related,
+    civil 'services' (e.g. administrative or police), 'at_home' or
+    'other')
+-   Fjob - father's job (nominal: 'teacher', 'health' care related,
+    civil 'services' (e.g. administrative or police), 'at_home' or
+    'other')
+-   reason - reason to choose this school (nominal: close to 'home',
+    school 'reputation', 'course' preference or 'other')
+-   guardian - student's guardian (nominal: 'mother', 'father' or
+    'other')
+-   traveltime - home to school travel time (numeric: 1 - \<15 min., 2 -
+    15 to 30 min., 3 - 30 min. to 1 hour, or 4 - \>1 hour)
+-   studytime - weekly study time (numeric: 1 - \<2 hours, 2 - 2 to 5
+    hours, 3 - 5 to 10 hours, or 4 - \>10 hours)
+-   failures - number of past class failures (numeric: n if 1\<=n\<3,
+    else 4)
+-   schoolsup - extra educational support (binary: yes or no)
+-   famsup - family educational support (binary: yes or no)
+-   paid - extra paid classes within the course subject (Math or
+    Portuguese) (binary: yes or no)
+-   activities - extra-curricular activities (binary: yes or no)
+-   nursery - attended nursery school (binary: yes or no)
+-   higher - wants to take higher education (binary: yes or no)
+-   internet - Internet access at home (binary: yes or no)
+-   romantic - with a romantic relationship (binary: yes or no)
+-   famrel - quality of family relationships (numeric: from 1 - very bad
+    to 5 - excellent)
+-   freetime - free time after school (numeric: from 1 - very low to 5 -
+    very high)
+-   goout - going out with friends (numeric: from 1 - very low to 5 -
+    very high)
+-   Dalc - workday alcohol consumption (numeric: from 1 - very low to
+    5 - very high)
+-   Walc - weekend alcohol consumption (numeric: from 1 - very low to
+    5 - very high)
+-   health - current health status (numeric: from 1 - very bad to 5 -
+    very good)
+-   absences - number of school absences (numeric: from 0 to 93)
+-   G1 - first period grade (numeric: from 0 to 20)
+-   G2 - second period grade (numeric: from 0 to 20)
+-   G3 - final grade (numeric: from 0 to 20, output target)
+
+## 2. Integració i selecció de les dades d'interès a analitzar
+
+El *dataset* original separa en dos arxius amb els mateixos atributs els
+estudiants de matemàtiques i els de portuguès. A la font del *dataset*
+es comenta i dona la opció de fusionar els dos conjunts de dades en un
+de sol amb les dades dels estudiants que estiguin als dos cursos alhora.
+Tot i no haver un identificador únic d'estudiant si que se'ns
+proporcionen els camps que haurien de conformar un estudiant com a únic
+dins el conjunt per poder fer la fusió.
+
+A priori inclourem tots els atributs de la taula ja que tots poden ser
+susceptibles d'interès per l'anàlisi. Tot i que només els compararem
+tots exhaustivament en alguns casos com ara l'anàlisi de correlacions,
+si que els revisarem al procés de neteja.
+
+### Càrrega incial
+
+Carreguem l'arxiu amb les dades i en mostrem un resum de les seves
+variables
+
+Per maximitzar l'estudi unirem els dos *datasets* que tenim un de la
+classe de matemàtiques i l'altre de portuguès i crearem la variable
+"tipus" per distingir-los, indicant "M" per matemàtiques o "P" per
+portuguès.
+
+```{r , echo=FALSE}
+mat <- read.table("student-mat.csv",sep=",",header=TRUE)
+por <- read.table("student-por.csv",sep=",",header=TRUE)
+
+tipus <- rep("M",nrow(mat))
+mat <- cbind(mat,tipus)
+tipus <- rep("P",nrow(por))
+por <- cbind(por,tipus)
+alumnes <- rbind(mat,por)
+str(alumnes)
+```
+
+Observem que hi ha variables tan de tipus categòric com numèric. En
+aquest *dataset* no hi ha variables amb valor de textos lliures que
+podrien tenir qualsevol contingut, per tant les que siguin tipus
+caràcter es poden tractar com a factors.
+
+## 3. Neteja de les dades.
+
+### 3.1. Les dades contenen zeros o elements buits? Com gestionaries aquests casos?
+
+Seguidament farem un llistat de totes les variables i un recompte dels
+seus valors únics. No inclouríem aquelles que sabem que o bé no serien
+ni variables numèriques ni categòriques, com ara identificadors, dates o
+les que continguin textos lliures, observem en el resum de dades però
+que no seria el cas i totes poden ser útils.
+
+En la següent funció en R es va fent un recompte de les variables,
+crearem un arxiu de sortida per a un primer anàlisi exploratori i
+mostraríem apart el percentatge de variables amb valors buits o "NA"s.
+La funció seria d'especial interès per altres estudis amb un gran nombre
+de variables.
+
+```{r , echo=FALSE}
+
+fila <- data.frame(matrix(ncol = 3, nrow = 0))
+colnames(fila) <- c('variable','valor','quants')
+taula <- fila
+
+for (x in names(alumnes)){
+  fila <- count(alumnes,x)
+  fila$tipu <- rep(x,nrow(fila))
+  colnames(fila) <- c('valor','quants','variable')
+  taula <- rbind(taula,fila)
+}
+
+taula <- taula[,c("variable","valor","quants")]
+write.csv(taula,"quants_tipus_valors.csv",fileEncoding="UTF-8")
+taula.buits <- taula[taula$valor=="" | is.na(taula$valor),]
+taula.buits <- cbind(taula.buits,round(as.numeric(taula.buits$quants) / nrow(alumnes) *100,digits=1))
+names(taula.buits)[4] <- "percent"
+rownames(taula.buits) <- NULL
+table(taula.buits)
+```
+
+</br> Descobrim que la taula no té cap valor buit, expressat com a una
+cadena buida en el cas de les dades tipus caràcter o com a valor NA en
+les variables numèriques.
+
+Si veiem el resultat de l'arxiu de sortida obtindríem un resum de quants
+valors únics hi ha per cada variable. Ens interessa saber quina varietat
+de valors únics hi ha, així observem que en diverses variables
+numèriques només hi ha valors del 1 al 5, o del 0 al 20 per tant serien
+pràcticament categòriques ja que son variables amb un rang molt concret
+de valors numèrics fixes, igualment segueixen sent numèriques ja que es
+tracta de puntuacions i per tant es poden ordenar de menor a major o al
+revés.
+
+Com que hem obtingut un llista de valors únics, revisarem el resultat de
+la taula de recompte dels valors per veure si hi ha algun valor que
+pugui ser estrany o fora de la seva categoria, amb un format diferent,
+mal escrit, etc. Està documentat al *dataset* original quins valors
+poden prendre les variables però igualment cal verificar que sigui així.
+Observem que no hi ha valors erronis ni fora del rang que s'espera que
+tinguin o valors expressats com a desconeguts. L'única variable que ens
+fa dubtar es *absences* ja que podria tenir *valors extrems*. Donat
+aquest resultat no serà necessari fer cap imputació de valors ja que les
+dades son completes.
+
+Al següent pas convertirem les dades de tipus caràcter a factor.
+
+```{r , echo=FALSE}
+alumnes <- as.data.frame(unclass(alumnes),stringsAsFactors=TRUE) # no va bé a R convertir-ho a factors abans de la funció anterior
+```
+
+### 3.2. Identificació i tractament de valors extrems.
+
+Mostrarem gràfiques tipus *boxplot* per cadascuna de les variables
+numèriques per identificar *outliers* ràpidament i després ens centrarem
+en la variable *absences* que és la que veiem que té un valor màxim més
+elevat i podria contenir valors extrems.
+
+```{r , echo=FALSE}
+par(mfrow=c(2,2), mar=c(2,5,1,1))
+for(i in 1:ncol(alumnes)) {
+  if (is.integer(alumnes[,i])){
+    boxplot(alumnes[,i], main = colnames(alumnes)[i], width = 100,col="cornflowerblue")
+  }
+}
+```
+
+Trobem que de les diverses variables numèriques algunes indiquen
+possibles valors extrems no obstant considerem que entren dins el rang
+previsible que puguin tenir i no les exclourem.
+
+Veiem que les variables G1, G2 i G3 son similars i com que no caldria
+tractar-les individualment en crearem una de sola amb la mitjana de les
+tres.
+
+```{r , echo=FALSE}
+alumnes$grade_mean <- round(rowMeans(alumnes[,c("G1","G2","G3")]),1)
+```
+
+Confirmem pel gràfic que la variable *absences* conté diversos valors
+extrems que sobresurten bastant. Els aïllem i els mostrem
+individualment, la resta de variables amb valors extrems son molt pocs i
+creiem que entren dins dels valors possibles que poden aparèixer.
+
+```{r , echo=FALSE}
+boxplot.stats(alumnes$absences)$out
+```
+
+Tenim que hi ha una cinquantena de valors extrems del total de 1044
+registres de dades, així que decidim excloure aquests registres de la
+mostra per poder fer un anàlisi millor posteriorment. En un possible
+estudi també es podria analitzar com son de diferents els estudiants amb
+valors extrems de la resta que no ho son.
+
+Per acabar el treball de neteja, eliminarem els *outliers* de la mostra
+i exportarem l'arxiu de sortida amb tot el dataset preparat.
+
+```{r , echo=FALSE}
+alumnes <- alumnes[!alumnes$absences %in% boxplot.stats(alumnes$absences)$out,]
+write.csv(alumnes,"dataset_out.csv",fileEncoding="UTF-8")
+```
+
+# 4. Anàlisi de dades
+
+## 4.1. Planificació dels anàlisis a aplicar
+
+Selecciono les variables numèriques del dataframe:
+
+```{r 0-3 , echo=FALSE}
+
+alumnes.numeric <- Filter(is.numeric, alumnes)
+alumnes.numeric <- subset(alumnes.numeric, select = -c(G1,G2,G3))
+str(alumnes.numeric)
+
+```
+
+Comprovo possibles correlacions generals entre les variables numèriques
+utilitzant la llibreria `corrplot`i alguns correlogrames:
+
+Font:
+[\<http://www.sthda.com/english/wiki/visualize-correlation-matrix-using-correlogram>](http://www.sthda.com/english/wiki/visualize-correlation-matrix-using-correlogram){.uri}
+
+```{r 0-4 , echo=FALSE}
+alumnes.numeric.cor <- cor(alumnes.numeric)
+library(corrplot)
+
+
+# mat : is a matrix of data
+# ... : further arguments to pass to the native R cor.test function
+cor.mtest <- function(mat, ...) {
+    mat <- as.matrix(mat)
+    n <- ncol(mat)
+    p.mat<- matrix(NA, n, n)
+    diag(p.mat) <- 0
+    for (i in 1:(n - 1)) {
+        for (j in (i + 1):n) {
+            tmp <- cor.test(mat[, i], mat[, j], ...)
+            p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
+        }
+    }
+  colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
+  p.mat
+}
+
+# matrix of the p-value of the correlation
+p.mat <- cor.mtest(alumnes.numeric)
+head(p.mat[, 1:5])
+
+# Specialized the insignificant value according to the significant level
+corrplot(alumnes.numeric.cor, type="upper", order="hclust", 
+         p.mat = p.mat, sig.level = 0.01)
+
+```
+
+Estudio ara possibles correlacions entre variables categòriques i
+numèriques:
+
+Faig diversos boxplots per veure de manera preeliminar com varia el
+*grade_mean* en funció de diferents variables categòriques:
+
+ 
+```{r 0-6 , echo=FALSE}
+
+par(mfrow=c(2,4), oma = c(0, 0, 0, 0))
+par(mar = c(par("mar")[1], 2, 1, 0))
+for(i in 1:ncol(alumnes)) {
+  if (is.factor(alumnes[,i])){
+    boxplot(alumnes$grade_mean ~ alumnes[,i], main = colnames(alumnes)[i], 
+              ylab = 'Grade', xlab = '', col="cornflowerblue",las=2)
+  }
+  if (i == 1){
+    mtext('   Boxplots comparatius', outer = TRUE, cex = 1.5)
+  }
+}
+
+
+```
+
+D'aquest dos conjunts de boxplots, trio els que semblen més interessants
+en relació amb el *grade* G:
+
+-   G \~ sex
+-   G \~ address
+-   G \~ assignatura
+-   G \~ nursery
+-   G \~ internet
+
+```{r definicio_var_analitzar , echo=FALSE}
+
+target_variables <- c("sex", "address", "school", "nursery", "internet")
+```
+
+Per acabar el plantejament dels anàlisis, creo una variable dicotòmica
+anomenada \*suspended\* que, en funció de G3 (o la mitja entre les G),
+identifiqui si un estudiant ha suspès o no.
+
+-   Aprovat (suspended = 0): G => 10
+-   Suspens (suspended = 1): G \< 10
+
+```{r 9-8 , echo=FALSE}
+alumnes$suspended <- ifelse(alumnes$grade_mean>=10, 0, 1)
+
+alumnes$suspended <- factor(alumnes$suspended)
+
+tail(alumnes$suspended, 10)
+tail(alumnes$G3, 10)
+
+```
+
+Així doncs, genero els següents gràfics de barres:
+
+```{r 0-9 , echo=FALSE}
+par(mfrow=c(1, 2))
+with(alumnes, Barplot(Fjob, by=suspended, style="divided", 
+  legend.pos="above", ylab="percent", scale = "percent",
+  label.bars=FALSE))
+
+with(alumnes, Barplot(factor(Walc), by=suspended, style="divided", 
+  legend.pos="above", ylab="percent", scale = "percent",
+  label.bars=FALSE))
+```
+
+## 4.2. Comprovació de la normalitat i homogeneïtat de la variància
+
+Comprovo la normalitat de la variable *Grade* que tractarem mitjançant
+un histograma amb corva de densitat i un diagrama de quantils qqplot:
+
+```{r comprovacions_normalitat, fig.width=3, fig.height=4 , echo=FALSE}
+
+par(mfrow=c(1, 1))
+
+Hist(alumnes$grade_mean, freq=F)
+lines(density(alumnes$grade_mean),col='blue')
+
+qqnorm(alumnes$grade_mean)
+qqline(alumnes$grade_mean)
+
+shapiro.test(alumnes$grade_mean)
+  
+```
+
+Es pot observar el següent:
+
+-   Forta tendència central al voltant de *Grade* = 10 .
+
+-   Alineació amb distribució normal sobretot entre els quantils -1 i 2,
+    aproximadament.
+
+-   Malgrat que visualment la distribució no sembla distar d'una normal,
+    el p value resultant de la aplicació del Shapiro-Wilk Test ens diu
+    que hem de rebutjar la hipòtesi nul·la de normalitat de dades per la
+    variable *Grade*.
+
+Veient que la distribució de la mostra no podem considerar que segueixi
+una distribució normal, apliquem dues transformacions (*BoxCox* i
+*sqrt*) per intentar que s'ajusti a una distribució normal:
+
+```{r transformació_normal, fig.width=4, fig.height=4 , echo=FALSE}
+
+require(DescTools)
+alumnes$GnormBoxCox <- BoxCox(alumnes$grade_mean, lambda = BoxCoxLambda(alumnes$grade_mean))
+alumnes$Gnormsqrt <- sqrt(max(alumnes$grade_mean+1)-alumnes$grade_mean)
+
+par(mfrow=c(2, 2))
+
+Hist(alumnes$GnormBoxCox, freq=F)
+lines(density(alumnes$GnormBoxCox),col='blue')
+
+qqnorm(alumnes$GnormBoxCox)
+qqline(alumnes$GnormBoxCox)
+
+Hist(alumnes$Gnormsqrt, freq=F)
+lines(density(alumnes$Gnormsqrt),col='blue')
+
+qqnorm(alumnes$Gnormsqrt)
+qqline(alumnes$Gnormsqrt)
+
+
+shapiro.test(alumnes$GnormBoxCox)
+shapiro.test(alumnes$Gnormsqrt)
+
+```
+
+Malgrat haver fet dues transformacions, la distribució mostral de la
+variable segueix essent no normal pel test de Shapiro-Wilk. Així doncs,
+amb les observacions anteriors tenim dues opcions per seguir:
+
+-   A\) Assumpció de normalitat seguint el TLC (n>30) i aplicació de
+    proves paramètriques.
+
+-   B\) Assumpció de no-normalitat i aplicació de proves no
+    paramètriques.
+
+Comprovo ara les gràfiques de densitat de les parelles de variables a
+analitzar del punt 4.1.:
+
+```{r 0-7a, fig.width=10, fig.height=6 , echo=FALSE}
+
+library(ggplot2)
+library(hrbrthemes)
+library(dplyr)
+library(tidyr)
+library(viridis)
+library(stringr)
+library(gridExtra)
+
+plist <- lapply(target_variables, function(each_variable) {
+  ggplot(alumnes, aes_string(x=alumnes$grade_mean,
+                                          group=each_variable,
+                                          fill=each_variable)) +
+          geom_density(adjust=1.5, alpha=.4) +
+          guides(fill=guide_legend(title=each_variable)) +
+          ggtitle(each_variable) + 
+          theme_ipsum()
+})
+
+grid.arrange(grobs = plist, ncol = 3)
+```
+
+## 4.3. Aplicació de proves estadístiques per comparar els grups de dades
+
+### 4.3.1. Aplicació de proves paramètriques
+
+Com hem explicat abans, assumim normalitat per fer proves paramètriques.
+Per assumir normalitat en la distribució poblacional, ens recolzem en
+l'aplicació del teorema del límit central (TLC) i en que la mida de
+cadascuna de les mostres és superior a 30 registres:
+
+```{r grandaria_mostres , echo=FALSE}
+
+print('Les mostres tenen una grandària de:')
+
+for (each_variable in target_variables){
+  # Obtinc diferents grandaries mostrals:
+  df <- data.frame(table(alumnes[[each_variable]]))
+  print(paste(each_variable, df)) 
+}
+```
+
+Comprovo ara l'homoscedasticitat de les diferents parelles de variables,
+és a dir, faré tests de variàncies que diran si les variàncies de les
+dues poblacions de cada variable són iguals.
+
+```{r var.tests , echo=FALSE}
+
+print('P-values resultants de var.test:')
+
+for (each_variable in target_variables){
+  
+  # Obtinc diferents categories:
+  uniq <- unique(unlist(alumnes[[each_variable]]))
+  
+  # Obtinc diferents subsets:
+  subsets <- list()
+  for (i in 1:length(uniq)){
+    subsets[[i]] <- subset(alumnes, alumnes[[each_variable]] == uniq[i])
+  }
+  
+  # Aplico var.test i obtinc p-value:
+  pval <- var.test(subsets[[1]]$grade_mean,subsets[[2]]$grade_mean)$p.value
+  print(paste('G ~',each_variable,':',format(pval, digits = 2, justify = "right"),'> 0.05?',pval>0.05))
+  
+  # Reinicio subsets:
+  subsets <- list()
+}
+
+```
+
+Com queda demostrat, les parelles de variables establertes per l'estudi
+tenen un p-value superior al nivell de significància *alpha = 0.05*, fet
+que no ens permet refusar la hipòtesi nul·la de igualtat entre
+variàncies i, per tant, **es pot assumir que les variàncies poblacionals
+desconegudes són iguals (homoscedasticitat) en totes les parelles de
+variables.**
+
+Formulem ara les preguntes d'estudi genèriques segons el que s'ha pogut
+observar anteriorment en els boxplots:
+
+1.  El sexe femení té *Grades* superiors al sexe masculí?
+2.  El *Grade* és superior en alumnes residents en l'àmbit urbà respecte
+    alumnes residents en entorns rurals?
+3.  El *Grade* és superior en l'escola GP que en la escola MS?
+4.  Els alumnes que han passat per una guarderia/escola bressol tenen un
+    valor de *Grade* més elevat que els que no hi han passat?
+5.  L'alumnat que té accés a internet té *Grade* major que el que no
+    disposa d'internet?
+6.  El *Grade* és el mateix entre alumnes amb families nombroses i no?
+
+Responem doncs a les següents preguntes:
+
+```{r t.tests , echo=FALSE}
+
+print('P-values resultants de t.test:')
+
+
+for (each_variable in target_variables){
+  
+  # Obtinc diferents categories:
+  uniq <- unique(unlist(alumnes[[each_variable]]))
+  
+  # Obtinc diferents subsets:
+  subsets <- list()
+  for (i in 1:length(uniq)){
+    subsets[[i]] <- subset(alumnes, alumnes[[each_variable]] == uniq[i])
+  }
+  
+  # Aplico t.test i obtinc p-value:
+  if (mean(subsets[[1]]$grade_mean) > mean(subsets[[2]]$grade_mean)){
+    pval <- t.test(subsets[[1]]$grade_mean,subsets[[2]]$grade_mean, 
+                   alternative="greater", 
+                   var.equal=TRUE)$p.value
+  }
+  else{
+    pval <- t.test(subsets[[1]]$grade_mean,subsets[[2]]$grade_mean, 
+                   alternative="less", 
+                   var.equal=TRUE)$p.value
+  }
+  
+
+  print(paste('G ~',each_variable,':',format(pval, digits = 4, justify = "right"),'> 0.05?',pval>0.05))
+  
+  # Reinicio subsets:
+  subsets <- list()
+}
+
+```
+
+Com es pot comprovar, les respostes a les preguntes anteriors serien:
+
+1.  El valor p obtingut és major que el nivell de significança i, per
+    tant, no es pot rebutjar la hipòtesi nul·la d'igualtat de mitjanes
+    de notes (*Grades)* entre sexe femení i masculí. Amb un nivell de
+    confiança del 95%, **es pot rebutjar estadísticament la idea que en
+    general les alumnes de sexe femení tenen *Grades* més elevats que
+    els alumnes de sexe masculí**.
+2.  El valor p obtingut és menor que el nivell de significança i es pot
+    rebutjar la hipòtesi nul·la d'igualtat de mitjanes de notes
+    (*Grades)* entre alumnes urbanites i rurals. Amb un nivell de
+    confiança del 95%, **es pot afirmar estadísticament que, en general,
+    l'alumnat que viu en àmbits urbans tenen *Grades* més elevats que
+    l'alumnat que viu en l'àmbit rural**.
+3.  Com en l'anterior punt, el valor p obtingut és menor que el nivell
+    de significança i, per tant, es pot rebutjar la hipòtesi nul·la
+    d'igualtat de mitjanes de notes (*Grades)* entre les dues escoles.
+    Amb un nivell de confiança del 95%, **es pot afirmar que els alumnes
+    de l'escola GP tenen *Grades* més elevats que l'alumnat de l'escola
+    MS**.
+4.  El valor p obtingut és major que el nivell de significança i, per
+    tant, no es pot rebutjar la hipòtesi nul·la d'igualtat de mitjanes
+    de notes (*Grades)* entre l'alumnat que ha anat a guarderia i el que
+    no. Amb un nivell de confiança del 95%, **s'ha de rebutjar
+    estadísticament la idea que els alumnes que han passat per una
+    guarderia/escola bressol tenen un valor de *Grade* més elevat que
+    els que no hi han passat**.
+5.  El valor p obtingut porta a rebutjar la hipòtesi nul·la d'igualtat
+    de mitjanes de notes (*Grades)* entre alumnes amb accés a internet o
+    no. Amb un nivell de confiança del 95%, **es pot afirmar
+    estadísticament que** l**'alumnat que té accés a internet té un
+    *Grade* major que el que no disposa d'accés a internet**.
+
+### 4.3.2. Aplicació de proves no paramètriques
+
+El test no paramètric equivalent al test t de dues mostres independents
+és l'anomenat test de suma de rangs de Wilcoxon. Aquest test es realitza
+per a dues mostres independents de mida n1 i n2. Tot i que no s'assumeix
+que les poblacions siguin normals, s'assumeix que la distribució de les
+poblacions és la mateixa (la qual cosa implica variància igual). Donada
+aquesta assumpció, el test es pot aplicar sobre les medianes i també
+sobre les mitjanes de la població (PID_00276231).
+
+Abans hem assumit que les variàncies poblacionals desconegudes són
+iguals (homoscedasticitat) en cadascuna de les parelles de variables. A
+més, com s'ha pogut veure en les gràfiques de densitat de les parelles
+de variables, s'observa que segueixen distribucions molt semblants.
+
+Apliquem doncs, aquestes proves no paramètriques de manera anàloga a com
+hem aplicat abans les proves T en el apartat anterior:
+
+```{r wilcoxon.tests , echo=FALSE}
+
+print('P-values resultants de Wilcoxon tests:')
+
+for (each_variable in target_variables){
+  
+  # Obtinc diferents categories:
+  uniq <- unique(unlist(alumnes[[each_variable]]))
+  
+  # Obtinc diferents subsets:
+  subsets <- list()
+  for (i in 1:length(uniq)){
+    subsets[[i]] <- subset(alumnes, alumnes[[each_variable]] == uniq[i])
+  }
+  
+  # Aplico t.test i obtinc p-value:
+  if (mean(subsets[[1]]$grade_mean) > mean(subsets[[2]]$grade_mean)){
+    pval <- wilcox.test(subsets[[1]]$grade_mean,subsets[[2]]$grade_mean, 
+                   alternative="greater")$p.value
+  }else{
+    pval <- wilcox.test(subsets[[1]]$grade_mean,subsets[[2]]$grade_mean, 
+                   alternative="less")$p.value
+  }
+  
+
+  print(paste('G ~',each_variable,':',format(pval, digits = 4, justify = "right"),'> 0.05?',pval>0.05))
+  
+  # Reinicio subsets:
+  subsets <- list()
+}
+```
+
+Podem comprovar que els p-value resultants de les proves
+no-paramètriques per aquestes parelles de variables, porta a les
+mateixes conclusions que els p-value resultants de les proves
+paramètriques. Per tant, es pot concloure que la assumpció (opció A
+detallada en el subapartat anterior) de normalitat poblacional -i la
+conseqüent desviació respecte a la normal- no genera cap impacte
+significatiu en els resultats dels anàlisis plantejats.
+
+### 4.3.3. Creació d'un model de regressió logística
+
+Plantegem diferents models logistics:
+
+*suspended\~address+school+internet+Walc+failures+studytime+traveltime*
+
+```{r model_logistic a , echo=FALSE}
+GLMa <- glm(formula=suspended~address+school+internet+Walc+failures+studytime+traveltime,
+            family=binomial(link=logit), 
+            data = alumnes)
+AIC(GLMa)
+```
+
+*suspended\~school+internet+Walc+failures+studytime+traveltime*
+
+```{r model_logistic b , echo=FALSE}
+GLMb <- glm(formula=suspended~school+internet+Walc+failures+studytime+traveltime,
+            family=binomial(link=logit), 
+            data = alumnes)
+AIC(GLMb)
+```
+
+*suspended\~address+school+internet+Walc+failures+studytime*
+
+```{r model_logistic c , echo=FALSE}
+GLMc <- glm(formula=suspended~school+internet+Walc+failures+studytime,
+            family=binomial(link=logit), 
+            data = alumnes)
+AIC(GLMc)
+```
+
+Dels tres models plantejats, el que ajusta millor les dades és el tercer
+ja que té el AIC més petit dels tres.
+
+Comprovem els OR.
+
+```{r model_generalitzat , echo=FALSE}
+exp(coef(GLMc))
+```
+
+Podem veure que estudiar a l'escola *MS* , no tenir internet, tenir un
+alt consum d'alcohol setmanal i, sobretot, haver suspès assignatures amb
+anterioritat, són factors de risc a l'hora de suspendre les assignatures
+de Matemàtiques i Portuguès.
+
+# 5. Representació dels resultats a partir de taules
+
+Durant el desenvolupament d'aquest document, s'ha pogut anar veient la
+visualització gràfica dels diferents resultats aportats. A continuació,
+resumim aquests resultats per arribar a les conclusions de l'apartat
+següent.
+
+Com hem vist amb les gràfiques de l'apartat 4.1, de les variables numèriques que tenen més correlació positiva i per tant influeixen més a tenir qualificacions més altes serien la educació dels pares i el temps l'estudi. Pel que fa a les variables categòriques, la variable _higher_, que indica la motivació de voler prendre una educació superior, és la que presenta més diferència entre el Si i el No i els que han respost que si presenten qualificacions més elevades.
+
+```{r echo=FALSE}
+par(mfrow=c(1, 2))
+boxplot(alumnes$grade_mean ~ alumnes[,"higher"], main = "higher", 
+              ylab = 'Grade', xlab = '', col="cornflowerblue")
+
+corp <- cor(alumnes[,c("Medu","Fedu","studytime","grade_mean")], use="complete")
+corrplot(corp, type="upper")
+```
+
+
+En la següent regressió  veiem la correlació negativa que indica que a menys consum d'alcohol el cap de setmana hi ha una lleugera millor qualificació en els estudis. També hem representat el sexe en colors on visualment identifiquem més punts masculins que femenins en els nivells més alts de consum d'alcohol en cap de setmana.
+
+```{r result1 , echo=FALSE}
+library(ggplot2)
+
+m1 = lm(grade_mean ~ Walc, data=alumnes)
+p <- predict(m1)
+pgrade_walc <- ggplot(alumnes, aes(x= grade_mean, y=Walc))
+pgrade_walc + geom_point(aes(color=sex)) + geom_line(aes(x=p))
+  
+#plot(alumnes$grade_mean,alumnes$Walc)
+#abline(lm(alumnes$Walc ~ alumnes$grade_mean))
+```
+
+# 6. Resolució del problema. A partir dels resultats obtinguts, quines són les conclusions? Els resultats permeten respondre al problema?
+
+Hem començat l'estudi amb descripció i la la neteja de les dades. És necessari conèixer bé les variables amb què estem tractant, de quin tipus son i quina qualitat tenen. Per això hem iniciat el procés de neteja amb una integració de dos conjunts de dades i la selecció de totes les variables ja que a priori no s'ha vist necessari descartar-ne cap. També hem vist que es un conjunt net de valors buits o errors, no obstant cal fer la comprovació sempre per garantir-ne la qualitat. Hem acabat la neteja amb la cerca de valors extrems, on hem vist que no ha estat necessari tractar-los excepte per una variable que ens podria donar problemes per l'anàlisi posterior.
+
+Seguidament hem passat a fer una tria de possibles variables d'interès mitjançant un gràfic de correlacions i una visualització de totes les variables categòriques i la seva relació amb la variable principal a estudiar que és la de les qualificacions anomenada _grade_mean_ que hem calculat prèviament. 
+
+Posant el focus en aquesta variable n'hem fet proves de normalitat i homoscedasticitat per seguir amb les següents proves i optar principalment per proves paramètriques tot i no complir estrictament la normalitat. Hem estudiat algunes variables escollides respecte _grade_mean_ i hem obtingut que el sexe femení no obté qualificacions estadísticament superiors al masculí però que el fet de viure en entorns urbans si que beneficia als alumnes en els seus estudis, entre d'altres comparacions.
+
+També hem estudiat en un conjunt de variables concret quin model era millor per determinar el fet de suspendre els estudis.
+
+Finalment a partir de l'obtingut a les correlacions de variables numèriques i els diagrames de caixa sobre la variable de _grade_mean_ podrien concloure que els factors més determinants a aconseguir una bona nota son el nivell d'estudis dels pares així com la predisposició a voler cursar estudis superiors.
