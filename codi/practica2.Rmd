@@ -3,11 +3,11 @@ title: "Pràctica 2"
 author: "Jordi Marsol López i Arnau Rafi Cuello"
 date: "11/12/2021"
 output:
-  word_document:  
+  html_document:
     toc: yes
   pdf_document:
     toc: yes
-  html_document:
+  word_document:  
     toc: yes
 editor_options:
   markdown:
@@ -340,7 +340,6 @@ numèriques:
 Faig diversos boxplots per veure de manera preeliminar com varia el
 *grade_mean* en funció de diferents variables categòriques:
 
- 
 ```{r 0-6 , echo=FALSE}
 
 par(mfrow=c(2,4), oma = c(0, 0, 0, 0))
@@ -363,7 +362,7 @@ en relació amb el *grade* G:
 
 -   G \~ sex
 -   G \~ address
--   G \~ assignatura
+-   G \~ tipus
 -   G \~ nursery
 -   G \~ internet
 
@@ -385,7 +384,7 @@ alumnes$suspended <- ifelse(alumnes$grade_mean>=10, 0, 1)
 alumnes$suspended <- factor(alumnes$suspended)
 
 tail(alumnes$suspended, 10)
-tail(alumnes$G3, 10)
+tail(alumnes$grade_mean, 10)
 
 ```
 
@@ -566,7 +565,6 @@ observar anteriorment en els boxplots:
     valor de *Grade* més elevat que els que no hi han passat?
 5.  L'alumnat que té accés a internet té *Grade* major que el que no
     disposa d'internet?
-6.  El *Grade* és el mateix entre alumnes amb families nombroses i no?
 
 Responem doncs a les següents preguntes:
 
@@ -643,7 +641,7 @@ Com es pot comprovar, les respostes a les preguntes anteriors serien:
 ### 4.3.2. Aplicació de proves no paramètriques
 
 El test no paramètric equivalent al test t de dues mostres independents
-és l'anomenat test de suma de rangs de Wilcoxon. Aquest test es realitza
+és l'anomenat test de sumade rangs de Wilcoxon. Aquest test es realitza
 per a dues mostres independents de mida n1 i n2. Tot i que no s'assumeix
 que les poblacions siguin normals, s'assumeix que la distribució de les
 poblacions és la mateixa (la qual cosa implica variància igual). Donada
@@ -750,19 +748,11 @@ visualització gràfica dels diferents resultats aportats. A continuació,
 resumim aquests resultats per arribar a les conclusions de l'apartat
 següent.
 
-Com hem vist amb les gràfiques de l'apartat 4.1, de les variables numèriques que tenen més correlació positiva i per tant influeixen més a tenir qualificacions més altes serien la educació dels pares i el temps l'estudi. Pel que fa a les variables categòriques, la variable _higher_, que indica la motivació de voler prendre una educació superior, és la que presenta més diferència entre el Si i el No i els que han respost que si presenten qualificacions més elevades.
-
-```{r echo=FALSE}
-par(mfrow=c(1, 2))
-boxplot(alumnes$grade_mean ~ alumnes[,"higher"], main = "higher", 
-              ylab = 'Grade', xlab = '', col="cornflowerblue")
-
-corp <- cor(alumnes[,c("Medu","Fedu","studytime","grade_mean")], use="complete")
-corrplot(corp, type="upper")
-```
-
-
-En la següent regressió  veiem la correlació negativa que indica que a menys consum d'alcohol el cap de setmana hi ha una lleugera millor qualificació en els estudis. També hem representat el sexe en colors on visualment identifiquem més punts masculins que femenins en els nivells més alts de consum d'alcohol en cap de setmana.
+En la següent regressió veiem la correlació negativa que indica que a
+menys consum d'alcohol el cap de setmana hi ha una lleugera millor
+qualificació en els estudis. També hem representat el sexe en colors on
+visualment identifiquem més punts masculins que femenins en els nivells
+més alts de consum d'alcohol en cap de setmana.
 
 ```{r result1 , echo=FALSE}
 library(ggplot2)
@@ -778,12 +768,37 @@ pgrade_walc + geom_point(aes(color=sex)) + geom_line(aes(x=p))
 
 # 6. Resolució del problema. A partir dels resultats obtinguts, quines són les conclusions? Els resultats permeten respondre al problema?
 
-Hem començat l'estudi amb descripció i la la neteja de les dades. És necessari conèixer bé les variables amb què estem tractant, de quin tipus son i quina qualitat tenen. Per això hem iniciat el procés de neteja amb una integració de dos conjunts de dades i la selecció de totes les variables ja que a priori no s'ha vist necessari descartar-ne cap. També hem vist que es un conjunt net de valors buits o errors, no obstant cal fer la comprovació sempre per garantir-ne la qualitat. Hem acabat la neteja amb la cerca de valors extrems, on hem vist que no ha estat necessari tractar-los excepte per una variable que ens podria donar problemes per l'anàlisi posterior.
+Hem començat l'estudi amb descripció i la la neteja de les dades. És
+necessari conèixer bé les variables amb què estem tractant, de quin
+tipus son i quina qualitat tenen. Per això hem iniciat el procés de
+neteja amb una integració de dos conjunts de dades i la selecció de
+totes les variables ja que a priori no s'ha vist necessari descartar-ne
+cap. També hem vist que es un conjunt net de valors buits o errors, no
+obstant cal fer la comprovació sempre per garantir-ne la qualitat. Hem
+acabat la neteja amb la cerca de valors extrems, on hem vist que no ha
+estat necessari tractar-los excepte per una variable que ens podria
+donar problemes per l'anàlisi posterior.
 
-Seguidament hem passat a fer una tria de possibles variables d'interès mitjançant un gràfic de correlacions i una visualització de totes les variables categòriques i la seva relació amb la variable principal a estudiar que és la de les qualificacions anomenada _grade_mean_ que hem calculat prèviament. 
+Seguidament hem passat a fer una tria de possibles variables d'interès
+mitjançant un gràfic de correlacions i una visualització de totes les
+variables categòriques i la seva relació amb la variable principal a
+estudiar que és la de les qualificacions anomenada *grade_mean* que hem
+calculat prèviament.
 
-Posant el focus en aquesta variable n'hem fet proves de normalitat i homoscedasticitat per seguir amb les següents proves i optar principalment per proves paramètriques tot i no complir estrictament la normalitat. Hem estudiat algunes variables escollides respecte _grade_mean_ i hem obtingut que el sexe femení no obté qualificacions estadísticament superiors al masculí però que el fet de viure en entorns urbans si que beneficia als alumnes en els seus estudis, entre d'altres comparacions.
+Posant el focus en aquesta variable n'hem fet proves de normalitat i
+homoscedasticitat per seguir amb les següents proves i optar
+principalment per proves paramètriques tot i no complir estrictament la
+normalitat. Hem estudiat algunes variables escollides respecte
+*grade_mean* i hem obtingut que el sexe femení no obté qualificacions
+estadísticament superiors al masculí però que el fet de viure en entorns
+urbans si que beneficia als alumnes en els seus estudis, entre d'altres
+comparacions.
 
-També hem estudiat en un conjunt de variables concret quin model era millor per determinar el fet de suspendre els estudis.
+També hem estudiat en un conjunt de variables concret quin model era
+millor per determinar el fet de suspendre els estudis.
 
-Finalment a partir de l'obtingut a les correlacions de variables numèriques i els diagrames de caixa sobre la variable de _grade_mean_ podrien concloure que els factors més determinants a aconseguir una bona nota son el nivell d'estudis dels pares així com la predisposició a voler cursar estudis superiors.
+Finalment a partir de l'obtingut a les correlacions de variables
+numèriques i els diagrames de caixa sobre la variable de *grade_mean*
+podrien concloure que els factors més determinants a aconseguir una bona
+nota son el nivell d'estudis dels pares així com la predisposició a
+voler cursar estudis superiors.
